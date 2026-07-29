@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080a0e">
+  <meta name="description" content="TNVA CLOCK Studio - thiết kế giao diện E-ink và gửi trực tiếp qua Bluetooth">
+  <title>TNVA CLOCK Studio</title>
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <section id="connectGate" class="gate">
+    <div class="gate-card">
+      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+      <h1>TNVA STUDIO</h1>
+      <p>Thiết kế giao diện E‑ink 212 × 104</p>
+      <div id="gateStatus" class="gate-status">TNVA-CLOCK-XXXXXX</div>
+      <div class="gate-actions">
+        <button id="connectGateBtn" class="btn primary large">Kết nối đồng hồ</button>
+        <button id="offlineBtn" class="btn large">Thiết kế ngoại tuyến</button>
+      </div>
+      <small class="gate-note">Bluetooth hoạt động trên Chrome/Edge Android hoặc máy tính qua HTTPS.</small>
+    </div>
+  </section>
+
+  <main id="appShell" class="app-shell hidden">
+    <header class="topbar">
+      <div class="brand-inline">
+        <div class="brand-mark small" aria-hidden="true"><span></span><span></span><span></span></div>
+        <strong>TNVA CLOCK Studio</strong>
+      </div>
+      <nav class="tabs" aria-label="Điều hướng">
+        <button class="tab active" data-view="designer">Thiết kế</button>
+        <button class="tab" data-view="library">Thư viện</button>
+        <button class="tab" data-view="device">Thiết bị</button>
+      </nav>
+      <div class="device-pill">
+        <span class="status-dot"></span>
+        <span id="deviceLabel">Ngoại tuyến</span>
+        <button id="disconnectBtn" class="icon-btn" title="Ngắt kết nối">×</button>
+      </div>
+    </header>
+
+    <section id="designerView" class="view active">
+      <div class="designer-layout">
+        <aside class="tool-rail panel" aria-label="Công cụ">
+          <button class="tool" data-add="text" title="Thêm chữ">Chữ</button>
+          <button class="tool" data-add="time" title="Thêm đồng hồ số">Giờ</button>
+          <button class="tool" data-add="date" title="Thêm ngày tháng">Ngày</button>
+          <button class="tool" data-add="weekday" title="Thêm thứ">Thứ</button>
+          <button class="tool" data-add="lunar" title="Thêm âm lịch">Âm</button>
+          <button class="tool" data-add="voltage" title="Thêm điện áp">Volt</button>
+          <button class="tool" data-add="battery" title="Thêm pin">Pin</button>
+          <button class="tool" data-add="analog" title="Thêm đồng hồ kim">Kim</button>
+          <label class="tool file-tool" title="Chèn ảnh">Ảnh<input id="imageInput" type="file" accept="image/*" hidden></label>
+          <button class="tool" data-add="line" title="Thêm đường">Đường</button>
+          <button class="tool" data-add="rect" title="Thêm khung">Khung</button>
+        </aside>
+
+        <section class="workspace panel">
+          <div class="workspace-bar">
+            <div class="segmented">
+              <button id="undoBtn" title="Hoàn tác Ctrl+Z">↶</button>
+              <button id="redoBtn" title="Làm lại Ctrl+Y">↷</button>
+              <button id="duplicateBtn" title="Nhân bản Ctrl+D">⧉</button>
+              <button id="deleteBtn" title="Xóa">⌫</button>
+            </div>
+            <div class="workspace-center">
+              <select id="screenProfile" aria-label="Kích thước màn">
+                <option value="212x104">212 × 104</option>
+                <option value="250x122">250 × 122</option>
+              </select>
+              <button id="gridBtn" class="toggle active">Lưới</button>
+              <button id="bwBtn" class="toggle active">1-bit</button>
+            </div>
+            <div class="zoom-control">
+              <button id="zoomOutBtn" title="Thu nhỏ">−</button>
+              <span id="zoomLabel">400%</span>
+              <button id="zoomInBtn" title="Phóng to">+</button>
+            </div>
+          </div>
+
+          <div class="stage-scroller">
+            <div class="stage-wrap"><canvas id="designCanvas" width="212" height="104"></canvas></div>
+          </div>
+          <div class="workspace-footer">
+            <span id="selectionInfo">Không chọn</span>
+            <span>Gói: <b id="packageInfo">0.0 / 4 KB</b></span>
+          </div>
+        </section>
+
+        <aside class="inspector panel">
+          <div class="inspector-head">
+            <strong>Thuộc tính</strong>
+            <div class="layer-actions">
+              <button id="layerUpBtn" title="Đưa lên">↑</button>
+              <button id="layerDownBtn" title="Đưa xuống">↓</button>
+            </div>
+          </div>
+          <div id="emptyInspector" class="empty-state">Chọn đối tượng để chỉnh sửa</div>
+          <div id="propertyForm" class="property-form hidden"></div>
+          <div class="layers-head"><strong>Lớp</strong><span id="layerCount">0</span></div>
+          <div id="layersList" class="layers-list"></div>
+        </aside>
+      </div>
+
+      <div class="bottom-actions panel">
+        <div class="file-name-group">
+          <input id="designTitle" value="Giao diện mới" placeholder="Tên giao diện">
+          <input id="designAuthor" placeholder="Tác giả">
+        </div>
+        <div class="action-group">
+          <button id="newDesignBtn" class="btn">Tạo mới</button>
+          <button id="saveLocalBtn" class="btn">Lưu</button>
+          <button id="openFileBtn" class="btn">Mở file</button>
+          <button id="downloadProjectBtn" class="btn">Tải dự án</button>
+          <button id="downloadBtn" class="btn">Xuất giao diện</button>
+          <button id="publishBtn" class="btn">Đăng kho</button>
+          <button id="installBtn" class="btn primary">Gửi vào đồng hồ</button>
+        </div>
+        <input id="projectFileInput" type="file" accept=".tnvaproject,.tnvaface,.eink,.json,application/json" hidden>
+      </div>
+    </section>
+
+    <section id="libraryView" class="view">
+      <div class="library-toolbar panel">
+        <div class="segmented">
+          <button class="btn library-tab active" data-library="local">Đã lưu</button>
+          <button class="btn library-tab" data-library="warehouse">Kho 123</button>
+          <button class="btn library-tab" data-library="public">Cộng đồng</button>
+        </div>
+        <input id="librarySearch" type="search" placeholder="Tìm tên hoặc tác giả">
+      </div>
+      <div id="localLibrary" class="card-grid"></div>
+      <div id="warehouseLibrary" class="card-grid hidden"></div>
+      <div id="publicLibrary" class="card-grid hidden"></div>
+    </section>
+
+    <section id="deviceView" class="view">
+      <div class="device-grid">
+        <article class="device-card panel"><span>Thiết bị</span><strong id="deviceName">Chưa kết nối</strong></article>
+        <article class="device-card panel"><span>Trạng thái</span><strong id="deviceState">Ngoại tuyến</strong></article>
+        <article class="device-card panel"><span>Điện áp</span><strong id="deviceVoltage">--</strong></article>
+        <article class="device-card panel"><span>Thời gian</span><strong id="deviceTime">--</strong></article>
+      </div>
+      <div class="device-controls panel">
+        <button id="connectDeviceBtn" class="btn primary">Kết nối đồng hồ</button>
+        <button id="syncTimeBtn" class="btn">Đồng bộ giờ</button>
+        <button id="toggleHourBtn" class="btn">Đổi 12 / 24 giờ</button>
+        <label class="btn file-label">Cập nhật firmware<input id="firmwareInput" type="file" accept=".bin,.img,application/octet-stream" hidden></label>
+      </div>
+      <div id="firmwareProgress" class="progress hidden"><span></span></div>
+      <div class="device-help panel">
+        <strong>Lưu ý</strong>
+        <p>Đồng hồ DA14585 hiện dùng màn 212 × 104. Giao diện gửi vào sẽ được lưu tại khe động ID 6 và tự cập nhật giờ, ngày, thứ, âm lịch, điện áp, pin.</p>
+        <a href="faces.html">Mở trang 6 mặt tích hợp và kho cài nhanh</a>
+      </div>
+    </section>
+
+    <details class="log-panel">
+      <summary>Nhật ký <span id="logCount">0</span></summary>
+      <div class="log-head"><button id="clearLogBtn">Xóa</button></div>
+      <pre id="logWindow"></pre>
+    </details>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="modalBackdrop" class="modal-backdrop hidden"><div id="modal" class="modal"></div></div>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
