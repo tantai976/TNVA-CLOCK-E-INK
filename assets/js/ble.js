@@ -9,6 +9,28 @@ function crc32(bytes) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+const ACK_ERRORS = {
+  0: 'OK',
+  1: 'Đồng hồ đang bận',
+  2: 'Đồng hồ chưa sẵn sàng',
+  3: 'Lệnh không hợp lệ',
+  4: 'Độ dài gói không hợp lệ',
+  5: 'Offset dữ liệu không hợp lệ',
+  6: 'Không xóa được Flash',
+  7: 'Không ghi được Flash',
+  8: 'CRC không khớp',
+  9: 'TNF1 không hợp lệ',
+  10: 'Giao diện không đúng kích thước màn',
+  11: 'Màn E-Ink bận quá thời gian',
+  12: 'Chưa có nhiệt độ',
+  13: 'Lỗi ADC nhiệt độ',
+  14: 'Nhiệt độ ngoài phạm vi',
+  15: 'Nhiệt độ chưa hiệu chỉnh',
+  16: 'OTA không hợp lệ'
+};
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 function findPattern(target, pattern) {
   outer: for (let i = 0; i <= target.length - pattern.length; i++) {
     for (let j = 0; j < pattern.length; j++) if (target[i + j] !== pattern[j]) continue outer;
@@ -94,14 +116,24 @@ export class TnvaBle {
       second: rawTime.byteLength >= 7 ? rawTime.getUint8(6) : 0,
       faceId: rawTime.byteLength >= 12 ? rawTime.getUint8(11) : 0,
       faceCount: rawTime.byteLength >= 13 ? rawTime.getUint8(12) : 0,
-      customValid: rawTime.byteLength >= 14 ? rawTime.getUint8(13) : 0
+      customValid: rawTime.byteLength >= 14 ? rawTime.getUint8(13) : 0,
+      temperature: rawTime.byteLength >= 16 && rawTime.getUint16(14, true) !== 0x8000
+        ? rawTime.getInt16(14, true) / 10
+        : null,
+      bootState: rawTime.byteLength >= 17 ? rawTime.getUint8(16) : null,
+      firmware: rawTime.byteLength >= 20
+        ? `${rawTime.getUint8(17)}.${rawTime.getUint8(18)}.${rawTime.getUint8(19)}`
+        : null,
+      model: rawTime.byteLength > 20
+        ? new TextDecoder().decode(new Uint8Array(rawTime.buffer, rawTime.byteOffset + 20, rawTime.byteLength - 20))
+        : null
     };
     let voltage = null;
     if (this.adcValue) {
       const rawVoltage = await this.adcValue.readValue();
       if (rawVoltage.byteLength >= 2) voltage = rawVoltage.getUint16(0, true) / 1000;
     }
-    return { name: this.device.name, time, voltage };
+    return { name: this.device.name, time, voltage, temperature: time.temperature };
   }
 
   async syncTime() {
@@ -137,8 +169,20 @@ export class TnvaBle {
       Math.max(0, lunarMonth - 1),
       lunarDay
     ]);
-    await this.longValue.writeValue(packet);
-    this.log('Đã đồng bộ thời gian');
+    await this.writePacket(packet);
+    await this.waitAck(0x91, 0, 1800);
+    const status = await this.readStatus();
+    const deviceTime = new Date(
+      status.time.year,
+      status.time.month,
+      status.time.day,
+      status.time.hour,
+      status.time.minute
+    );
+    if (Math.abs(deviceTime.getTime() - Date.now()) > 120000) {
+      throw new Error('Đồng hồ trả thời gian không khớp');
+    }
+    this.log('Đã đồng bộ thời gian và nhận ACK');
   }
 
   async toggleHourFormat() {
@@ -147,8 +191,83 @@ export class TnvaBle {
     this.log('Đã đổi 12 / 24 giờ');
   }
 
+  async selectFace(faceId) {
+    if (!this.connected) throw new Error('Chưa kết nối');
+    const status = await this.readStatus();
+    if (faceId < 0 || faceId >= (status.time.faceCount || 0)) {
+      throw new Error('Firmware chưa hỗ trợ mặt này');
+    }
+    const packet = new Uint8Array([
+      0x99, faceId, 0x54, 0x4e, 0x56, 0x41, 0x46, 0x41, 0x43, 0x45, 0x06, 0x00
+    ]);
+    await this.writePacket(packet);
+    await delay(3400);
+    let next = await this.readStatus();
+    if (next.time.faceId !== faceId) {
+      packet[0] = 0x93;
+      await this.writePacket(packet);
+      await delay(3400);
+      next = await this.readStatus();
+    }
+    if (next.time.faceId !== faceId) throw new Error('Đồng hồ chưa xác nhận đổi mặt');
+    this.log(`Đã chọn mặt ${faceId + 1}`);
+    return next;
+  }
+
+  async writePacket(bytes) {
+    if (this.longValue.writeValueWithResponse) {
+      await this.longValue.writeValueWithResponse(bytes);
+    } else {
+      await this.longValue.writeValue(bytes);
+    }
+  }
+
+  async waitAck(command, expectedOffset, timeoutMs = 2500) {
+    if (!this.ctrlPoint) throw new Error('Firmware/web thiếu FF03 ACK');
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const value = await this.ctrlPoint.readValue();
+      if (value.byteLength >= 12 &&
+          value.getUint8(11) === 0xa5 &&
+          value.getUint8(10) === 1 &&
+          value.getUint8(0) === command) {
+        const code = value.getUint8(1);
+        const nextOffset = value.getUint32(4, true);
+        if (code !== 0) {
+          const error = new Error(ACK_ERRORS[code] || `Lỗi firmware ${code}`);
+          error.ackCode = code;
+          throw error;
+        }
+        if (nextOffset === expectedOffset) return { nextOffset, bootState: value.getUint8(2) };
+      }
+      await delay(60);
+    }
+    const error = new Error(`Hết thời gian chờ ACK 0x${command.toString(16)}`);
+    error.ackTimeout = true;
+    throw error;
+  }
+
+  async writeAcked(packet, command, expectedOffset, retries = 2) {
+    let lastError;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      await this.writePacket(packet);
+      try {
+        return await this.waitAck(command, expectedOffset);
+      } catch (error) {
+        lastError = error;
+        if (!error.ackTimeout || attempt === retries) throw error;
+        this.log(`Thử lại ACK 0x${command.toString(16)} (${attempt + 1}/${retries})`);
+      }
+    }
+    throw lastError;
+  }
+
   async uploadFace(packageBytes, onProgress = () => {}) {
     if (!this.connected) throw new Error('Chưa kết nối');
+    if (!this.ctrlPoint) throw new Error('Firmware chưa hỗ trợ FF03 ACK');
+    if (packageBytes.length < 20 || packageBytes.length > 4096) {
+      throw new Error('Gói TNF1 phải từ 20 byte đến 4 KB');
+    }
     const checksum = crc32(packageBytes);
     const begin = new Uint8Array(12);
     const view = new DataView(begin.buffer);
@@ -156,7 +275,7 @@ export class TnvaBle {
     view.setUint32(1, packageBytes.length, true);
     view.setUint32(5, checksum, true);
     begin[9] = 2;
-    await this.longValue.writeValue(begin);
+    await this.writeAcked(begin, 0x94, 0);
     const chunkSize = 120;
     for (let offset = 0; offset < packageBytes.length; offset += chunkSize) {
       const chunk = packageBytes.slice(offset, offset + chunkSize);
@@ -165,19 +284,37 @@ export class TnvaBle {
       packet[0] = 0x95;
       packetView.setUint32(1, offset, true);
       packet.set(chunk, 5);
-      await this.longValue.writeValue(packet);
+      await this.writeAcked(packet, 0x95, offset + chunk.length);
       onProgress(Math.min(100, Math.round(((offset + chunk.length) / packageBytes.length) * 100)));
     }
-    await this.longValue.writeValue(new Uint8Array([0x96]));
-    await new Promise(resolve => setTimeout(resolve, 3200));
-    const status = await this.readStatus();
+    try {
+      await this.writeAcked(new Uint8Array([0x96]), 0x96, packageBytes.length, 0);
+    } catch (error) {
+      if (!error.ackTimeout) throw error;
+      const fallback = await this.readStatus();
+      if (!fallback.time.customValid || fallback.time.faceId !== 6) throw error;
+      this.log('Mất ACK 0x96 nhưng FF01 xác nhận TNF1 đã lưu');
+    }
+    await delay(120);
+    let status = await this.readStatus();
+    for (let retry = 0; retry < 5 &&
+         (!status.time.customValid || status.time.faceId !== 6); retry++) {
+      await delay(120);
+      status = await this.readStatus();
+    }
     if (!status.time.customValid || status.time.faceId !== 6) throw new Error('Đồng hồ không xác nhận giao diện đã lưu');
     this.log('Đã lưu giao diện vào Flash');
   }
 
   async updateFirmware(file, onProgress = () => {}) {
     if (!this.connected) throw new Error('Chưa kết nối');
+    if (!file.name?.toLowerCase().endsWith('.bin')) {
+      throw new Error('OTA recovery chỉ nhận raw application .bin, không nhận .img/full Flash');
+    }
     const firm = new Uint8Array(await file.arrayBuffer());
+    if (firm.length === 0 || firm.length > 0xffff) {
+      throw new Error('Sai loại file: OTA V12 chỉ nhận raw application tối đa 65535 byte; tuyệt đối không chọn full Flash backup');
+    }
     const magic = new Uint8Array([0x79, 0x13, 0xa5, 0xf9, 0x86, 0xec, 0x5a, 0x06]);
     const position = findPattern(firm, magic);
     if (position < 0) throw new Error('Firmware không hợp lệ');

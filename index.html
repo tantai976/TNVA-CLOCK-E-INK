@@ -3,166 +3,205 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#080a0e">
-  <meta name="description" content="TNVA CLOCK Studio - thiết kế giao diện E-ink và gửi trực tiếp qua Bluetooth">
-  <title>TNVA CLOCK Studio</title>
+  <meta name="theme-color" content="#08101d">
+  <meta name="description" content="TNVA CLOCK Studio cho màn E-ink 2.13 inch 212x104">
+  <title>TNVA CLOCK Studio R19</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Mono:wght@400;600;700&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-  <section id="connectGate" class="gate">
+  <section id="connectGate" class="gate hidden" aria-hidden="true">
     <div class="gate-card">
-      <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-      <h1>TNVA STUDIO</h1>
-      <p>Thiết kế giao diện E‑ink 212 × 104</p>
-      <div id="gateStatus" class="gate-status">TNVA-CLOCK-XXXXXX</div>
-      <div class="gate-actions">
-        <button id="connectGateBtn" class="btn primary large">Kết nối đồng hồ</button>
-        <button id="offlineBtn" class="btn large">Thiết kế ngoại tuyến</button>
-      </div>
-      <small class="gate-note">Bluetooth hoạt động trên Chrome/Edge Android hoặc máy tính qua HTTPS.</small>
+      <h1>TNVA CLOCK</h1>
+      <p id="gateStatus">Sẵn sàng</p>
+      <button id="connectGateBtn" class="btn primary">Kết nối đồng hồ</button>
+      <button id="offlineBtn" class="btn">Dùng ngoại tuyến</button>
     </div>
   </section>
 
-  <main id="appShell" class="app-shell hidden">
+  <main id="appShell" class="app-shell">
     <header class="topbar">
       <div class="brand-inline">
-        <div class="brand-mark small" aria-hidden="true"><span></span><span></span><span></span></div>
-        <strong>TNVA CLOCK Studio</strong>
+        <div class="tnva-logo" aria-hidden="true"><span>T</span><span>N</span><span>V</span><span>A</span></div>
+        <div><strong>TNVA CLOCK</strong><small>Studio E‑ink 2.13 inch</small></div>
       </div>
-      <nav class="tabs" aria-label="Điều hướng">
-        <button class="tab active" data-view="designer">Thiết kế</button>
-        <button class="tab" data-view="library">Thư viện</button>
-        <button class="tab" data-view="device">Thiết bị</button>
-      </nav>
-      <div class="device-pill">
-        <span class="status-dot"></span>
-        <span id="deviceLabel">Ngoại tuyến</span>
-        <button id="disconnectBtn" class="icon-btn" title="Ngắt kết nối">×</button>
+      <details class="log-panel activity-console">
+        <summary><span class="activity-dot"></span><span id="liveActivity">Sẵn sàng</span><span id="logCount">0</span></summary>
+        <div class="log-head"><strong>Nhật ký hoạt động</strong><button id="clearLogBtn">Xóa</button></div>
+        <pre id="logWindow"></pre>
+      </details>
+      <div class="device-actions">
+        <div class="device-pill"><span class="status-dot"></span><span id="deviceLabel">Chưa kết nối</span></div>
+        <button id="connectDeviceBtn" class="btn primary compact">Kết nối</button>
+        <button id="disconnectBtn" class="btn compact" disabled>Ngắt</button>
       </div>
     </header>
 
-    <section id="designerView" class="view active">
-      <div class="designer-layout">
-        <aside class="tool-rail panel" aria-label="Công cụ">
-          <button class="tool" data-add="text" title="Thêm chữ">Chữ</button>
-          <button class="tool" data-add="time" title="Thêm đồng hồ số">Giờ</button>
-          <button class="tool" data-add="date" title="Thêm ngày tháng">Ngày</button>
-          <button class="tool" data-add="weekday" title="Thêm thứ">Thứ</button>
-          <button class="tool" data-add="lunar" title="Thêm âm lịch">Âm</button>
-          <button class="tool" data-add="voltage" title="Thêm điện áp">Volt</button>
-          <button class="tool" data-add="battery" title="Thêm pin">Pin</button>
-          <button class="tool" data-add="analog" title="Thêm đồng hồ kim">Kim</button>
-          <label class="tool file-tool" title="Chèn ảnh">Ảnh<input id="imageInput" type="file" accept="image/*" hidden></label>
-          <button class="tool" data-add="line" title="Thêm đường">Đường</button>
-          <button class="tool" data-add="rect" title="Thêm khung">Khung</button>
-        </aside>
+    <nav class="tabs" aria-label="Điều hướng chính">
+      <button class="tab active" data-view="main"><span>⌂</span>Chính</button>
+      <button class="tab" data-view="library"><span>▦</span>Kho</button>
+      <button class="tab" data-view="designer"><span>✦</span>Thiết kế</button>
+      <button class="tab" data-view="image"><span>▧</span>Ảnh</button>
+      <button class="tab" data-view="countdown"><span>◷</span>Đếm ngược</button>
+    </nav>
 
-        <section class="workspace panel">
-          <div class="workspace-bar">
-            <div class="segmented">
-              <button id="undoBtn" title="Hoàn tác Ctrl+Z">↶</button>
-              <button id="redoBtn" title="Làm lại Ctrl+Y">↷</button>
-              <button id="duplicateBtn" title="Nhân bản Ctrl+D">⧉</button>
-              <button id="deleteBtn" title="Xóa">⌫</button>
-            </div>
-            <div class="workspace-center">
-              <select id="screenProfile" aria-label="Kích thước màn">
-                <option value="212x104">212 × 104</option>
-                <option value="250x122">250 × 122</option>
-              </select>
-              <button id="gridBtn" class="toggle active">Lưới</button>
-              <button id="bwBtn" class="toggle active">1-bit</button>
-            </div>
-            <div class="zoom-control">
-              <button id="zoomOutBtn" title="Thu nhỏ">−</button>
-              <span id="zoomLabel">400%</span>
-              <button id="zoomInBtn" title="Phóng to">+</button>
-            </div>
-          </div>
-
-          <div class="stage-scroller">
-            <div class="stage-wrap"><canvas id="designCanvas" width="212" height="104"></canvas></div>
-          </div>
-          <div class="workspace-footer">
-            <span id="selectionInfo">Không chọn</span>
-            <span>Gói: <b id="packageInfo">0.0 / 4 KB</b></span>
-          </div>
-        </section>
-
-        <aside class="inspector panel">
-          <div class="inspector-head">
-            <strong>Thuộc tính</strong>
-            <div class="layer-actions">
-              <button id="layerUpBtn" title="Đưa lên">↑</button>
-              <button id="layerDownBtn" title="Đưa xuống">↓</button>
-            </div>
-          </div>
-          <div id="emptyInspector" class="empty-state">Chọn đối tượng để chỉnh sửa</div>
-          <div id="propertyForm" class="property-form hidden"></div>
-          <div class="layers-head"><strong>Lớp</strong><span id="layerCount">0</span></div>
-          <div id="layersList" class="layers-list"></div>
-        </aside>
-      </div>
-
-      <div class="bottom-actions panel">
-        <div class="file-name-group">
-          <input id="designTitle" value="Giao diện mới" placeholder="Tên giao diện">
-          <input id="designAuthor" placeholder="Tác giả">
+    <section id="mainView" class="view active">
+      <section class="hero panel">
+        <div>
+          <span class="eyebrow">TNVA / DEVICE</span>
+          <h1>Điều khiển đồng hồ</h1>
+          <p>Giữ một kết nối BLE cho toàn bộ các tab. Chuyển tab không làm ngắt đồng hồ.</p>
         </div>
-        <div class="action-group">
-          <button id="newDesignBtn" class="btn">Tạo mới</button>
-          <button id="saveLocalBtn" class="btn">Lưu</button>
-          <button id="openFileBtn" class="btn">Mở file</button>
-          <button id="downloadProjectBtn" class="btn">Tải dự án</button>
-          <button id="downloadBtn" class="btn">Xuất giao diện</button>
-          <button id="publishBtn" class="btn">Đăng kho</button>
-          <button id="installBtn" class="btn primary">Gửi vào đồng hồ</button>
-        </div>
-        <input id="projectFileInput" type="file" accept=".tnvaproject,.tnvaface,.eink,.json,application/json" hidden>
-      </div>
-    </section>
+        <button id="syncTimeBtn" class="btn primary" disabled>Đồng bộ giờ</button>
+      </section>
 
-    <section id="libraryView" class="view">
-      <div class="library-toolbar panel">
-        <div class="segmented">
-          <button class="btn library-tab active" data-library="local">Đã lưu</button>
-          <button class="btn library-tab" data-library="warehouse">Kho 123</button>
-          <button class="btn library-tab" data-library="public">Cộng đồng</button>
-        </div>
-        <input id="librarySearch" type="search" placeholder="Tìm tên hoặc tác giả">
-      </div>
-      <div id="localLibrary" class="card-grid"></div>
-      <div id="warehouseLibrary" class="card-grid hidden"></div>
-      <div id="publicLibrary" class="card-grid hidden"></div>
-    </section>
-
-    <section id="deviceView" class="view">
-      <div class="device-grid">
+      <section class="device-grid">
         <article class="device-card panel"><span>Thiết bị</span><strong id="deviceName">Chưa kết nối</strong></article>
         <article class="device-card panel"><span>Trạng thái</span><strong id="deviceState">Ngoại tuyến</strong></article>
         <article class="device-card panel"><span>Điện áp</span><strong id="deviceVoltage">--</strong></article>
+        <article class="device-card panel"><span>Nhiệt độ E‑ink</span><strong id="deviceTemperature">--.-°C</strong></article>
         <article class="device-card panel"><span>Thời gian</span><strong id="deviceTime">--</strong></article>
+      </section>
+
+      <div class="section-title"><div><span class="eyebrow">BUILT‑IN FACES</span><h2>6 mặt tích hợp</h2></div><span class="section-note">Roboto Condensed · chữ tĩnh có Inter và Noto Mono</span></div>
+      <section id="builtinFaces" class="face-grid">
+        <article class="face-card panel active-face" data-face-card="0"><div class="face-preview"><img src="previews/face-outline.png" alt="Số viền 3D"></div><div class="face-copy"><div><b>Số viền 3D</b><small>Giờ viền, âm lịch, nhiệt độ và pin</small></div><span>01</span></div><button class="btn primary apply-face" data-face="0" disabled>Áp dụng</button></article>
+        <article class="face-card panel" data-face-card="1"><div class="face-preview"><img src="previews/app-man1.png" alt="Giờ và âm lịch"></div><div class="face-copy"><div><b>Giờ + âm lịch</b><small>Mặt 02 · dòng dưới TNVA‑CLOCK</small></div><span>02</span></div><button class="btn primary apply-face" data-face="1" disabled>Áp dụng</button></article>
+        <article class="face-card panel" data-face-card="2"><div class="face-preview portrait"><img src="previews/face-portrait-info.png" alt="Dọc giờ và thông tin"></div><div class="face-copy"><div><b>Dọc · Thông tin</b><small>Ngày, giờ, âm lịch, pin và nhiệt độ</small></div><span>03</span></div><button class="btn primary apply-face" data-face="2" disabled>Áp dụng</button></article>
+        <article class="face-card panel" data-face-card="3"><div class="face-preview portrait"><img src="previews/face-portrait-lunar.png" alt="Dọc lịch âm"></div><div class="face-copy"><div><b>Dọc · Lịch âm</b><small>Ngày lớn, can chi, sự kiện và giờ</small></div><span>04</span></div><button class="btn primary apply-face" data-face="3" disabled>Áp dụng</button></article>
+        <article class="face-card panel" data-face-card="4"><div class="face-preview"><img src="previews/face-calendar-split.png" alt="Lịch tháng chia đôi"></div><div class="face-copy"><div><b>Lịch tháng chia đôi</b><small>Lịch, giờ, ngày, nhiệt độ và pin</small></div><span>05</span></div><button class="btn primary apply-face" data-face="4" disabled>Áp dụng</button></article>
+        <article class="face-card panel" data-face-card="5"><div class="face-preview"><img src="previews/face-outline-minimal.png" alt="Số viền tối giản"></div><div class="face-copy"><div><b>Số viền tối giản</b><small>Ngày trên, giờ viền và âm lịch dưới</small></div><span>06</span></div><button class="btn primary apply-face" data-face="5" disabled>Áp dụng</button></article>
+      </section>
+    </section>
+
+    <section id="libraryView" class="view">
+      <section class="library-toolbar panel">
+        <div><span class="eyebrow">TNVA WAREHOUSE</span><h2>Kho giao diện</h2><small id="warehouseSummary">Đang tải danh sách…</small></div>
+        <div class="library-actions"><input id="librarySearch" type="search" placeholder="Tìm tên, tác giả hoặc mã"><select id="warehouseOrientation"><option value="all">Tất cả</option><option value="landscape">Ngang</option><option value="portrait">Dọc</option></select></div>
+        <button class="library-tab active hidden" data-library="warehouse" aria-hidden="true">Kho</button>
+      </section>
+      <div id="localLibrary" class="hidden"></div>
+      <div id="publicLibrary" class="hidden"></div>
+      <div id="warehouseLibrary" class="card-grid"></div>
+      <div class="load-more-wrap"><button id="warehouseLoadMore" class="btn">Xem thêm</button></div>
+    </section>
+
+    <section id="designerView" class="view">
+      <section class="designer-intro panel designer-pro-intro">
+        <div><span class="eyebrow">TNVA DESIGN LAB</span><h2>Thiết kế 212 × 104</h2><p>Chạm đối tượng trên màn hình, chỉnh đúng nhóm thuộc tính rồi gửi thẳng vào đồng hồ.</p></div>
+        <div class="designer-intro-actions"><button id="openFileBtn" class="btn">Mở file</button><button id="downloadProjectBtn" class="btn">Tải dự án</button><span class="beta-badge">R19</span></div>
+      </section>
+
+      <div class="designer-pro-layout">
+        <section class="workspace panel designer-screen-card">
+          <div class="workspace-bar pro-workspace-bar">
+            <div class="segmented"><button id="undoBtn" title="Hoàn tác">↶</button><button id="redoBtn" title="Làm lại">↷</button><button id="duplicateBtn" title="Nhân bản">⧉</button><button id="deleteBtn" title="Xóa">⌫</button></div>
+            <div class="workspace-center"><select id="screenProfile"><option value="212x104">Ngang 212 × 104</option><option value="104x212">Dọc 104 × 212</option></select><button id="gridBtn" class="toggle active">Lưới</button><button id="bwBtn" class="toggle active">1‑bit</button></div>
+            <div class="zoom-control"><button id="zoomOutBtn">−</button><span id="zoomLabel">400%</span><button id="zoomInBtn">+</button></div>
+          </div>
+          <div class="stage-scroller"><div class="stage-wrap eink-device-frame"><canvas id="designCanvas" width="212" height="104"></canvas></div></div>
+          <div class="workspace-footer"><span id="selectionInfo">Không chọn</span><span>Gói: <b id="packageInfo">0.0 / 4 KB</b></span></div>
+        </section>
+
+        <section class="object-dock panel" aria-label="Đối tượng">
+          <div class="object-dock-head"><strong>Đối tượng</strong><button id="addObjectBtn" class="add-object-btn" type="button">＋</button></div>
+          <div id="mobileLayersList" class="object-card-strip"></div>
+          <div class="quick-add-strip">
+            <button class="quick-add" data-add="time"><span>◷</span>Đồng hồ</button>
+            <button class="quick-add" data-add="template"><span>Tᵀ</span>Siêu văn bản</button>
+            <button class="quick-add" data-add="calendar"><span>▦</span>Lịch</button>
+            <label class="quick-add file-tool"><span>▧</span>Hình ảnh<input id="imageInput" type="file" accept="image/*" hidden></label>
+            <button class="quick-add" data-add="shape"><span>◯</span>Hình học</button>
+            <button class="quick-add" id="bitmapEditorBtn"><span>▦</span>Chấm điểm</button>
+          </div>
+        </section>
+
+        <aside class="inspector panel pro-inspector">
+          <div class="inspector-head"><div><span class="eyebrow">THUỘC TÍNH</span><strong id="inspectorTitle">Chưa chọn đối tượng</strong></div><div class="layer-actions"><button id="layerUpBtn" title="Đưa lên">↑</button><button id="layerDownBtn" title="Đưa xuống">↓</button></div></div>
+          <div id="emptyInspector" class="empty-state">Chạm một đối tượng trên màn hình hoặc bấm nút ＋ để thêm.</div>
+          <div id="propertyForm" class="property-form hidden"></div>
+
+          <section id="positionPanel" class="position-panel hidden">
+            <div class="align-strip">
+              <button data-align="left" title="Sát trái">⇤</button><button data-align="hcenter" title="Giữa ngang">↔</button><button data-align="right" title="Sát phải">⇥</button>
+              <button data-align="top" title="Sát trên">↥</button><button data-align="vcenter" title="Giữa dọc">↕</button><button data-align="bottom" title="Sát dưới">↧</button>
+            </div>
+            <div class="nudge-pad" aria-label="Di chuyển đối tượng">
+              <button data-nudge="0,-1">⌃</button><button data-nudge="-1,0">‹</button><button id="nudgeStepBtn" class="nudge-center" data-step="1">1 px</button><button data-nudge="1,0">›</button><button data-nudge="0,1">⌄</button>
+            </div>
+          </section>
+
+          <details class="layers-details"><summary>Danh sách lớp <span id="layerCount">0</span></summary><div id="layersList" class="layers-list"></div></details>
+        </aside>
       </div>
-      <div class="device-controls panel">
-        <button id="connectDeviceBtn" class="btn primary">Kết nối đồng hồ</button>
-        <button id="syncTimeBtn" class="btn">Đồng bộ giờ</button>
-        <button id="toggleHourBtn" class="btn">Đổi 12 / 24 giờ</button>
-        <label class="btn file-label">Cập nhật firmware<input id="firmwareInput" type="file" accept=".bin,.img,application/octet-stream" hidden></label>
-      </div>
-      <div id="firmwareProgress" class="progress hidden"><span></span></div>
-      <div class="device-help panel">
-        <strong>Lưu ý</strong>
-        <p>Đồng hồ DA14585 hiện dùng màn 212 × 104. Giao diện gửi vào sẽ được lưu tại khe động ID 6 và tự cập nhật giờ, ngày, thứ, âm lịch, điện áp, pin.</p>
-        <a href="faces.html">Mở trang 6 mặt tích hợp và kho cài nhanh</a>
+
+      <aside id="objectPalette" class="object-palette panel hidden" aria-hidden="true">
+        <div class="palette-head"><strong>Thêm đối tượng</strong><button id="closeObjectPalette" type="button">×</button></div>
+        <div class="palette-grid">
+          <button class="tool" data-add="text"><span>T</span>Văn bản</button>
+          <button class="tool" data-add="template"><span>@</span>Siêu văn bản</button>
+          <button class="tool" data-add="time"><span>◷</span>Đồng hồ số</button>
+          <button class="tool" data-add="analog"><span>◴</span>Đồng hồ kim</button>
+          <button class="tool" data-add="calendar"><span>▦</span>Lịch</button>
+          <button class="tool" data-add="date"><span>日</span>Ngày</button>
+          <button class="tool" data-add="weekday"><span>T2</span>Thứ</button>
+          <button class="tool" data-add="lunar"><span>ÂL</span>Âm lịch</button>
+          <button class="tool" data-add="voltage"><span>V</span>Điện áp</button>
+          <button class="tool" data-add="battery"><span>▰</span>Pin</button>
+          <label class="tool file-tool"><span>▧</span>Hình ảnh<input class="paletteImageInput" type="file" accept="image/*" hidden></label>
+          <button class="tool" data-add="shape"><span>◯</span>Hình học</button>
+          <button class="tool" data-add="line"><span>／</span>Đường thẳng</button>
+          <button class="tool" data-add="rect"><span>□</span>Khung</button>
+          <button class="tool" id="paletteBitmapBtn"><span>▦</span>Chấm từng điểm</button>
+        </div>
+      </aside>
+
+      <div class="bottom-actions panel pro-bottom-actions"><div class="file-name-group"><input id="designTitle" value="Giao diện mới" placeholder="Tên giao diện"><input id="designAuthor" placeholder="Tác giả"></div><div class="action-group"><button id="newDesignBtn" class="btn">Tạo mới</button><button id="saveLocalBtn" class="btn">Lưu</button><button id="downloadBtn" class="btn">Xuất gói</button><button id="publishBtn" class="btn">Đăng kho</button><button id="installBtn" class="btn primary">Gửi vào đồng hồ</button></div><input id="projectFileInput" type="file" accept=".tnvaproject,.tnvaface,.eink,.json,application/json" hidden></div>
+      <div class="image-fit-actions hidden"><button id="fitImageBtn"></button><button id="fillImageBtn"></button><button id="resetImageBtn"></button></div>
+    </section>
+
+    <section id="imageView" class="view">
+      <section class="designer-intro panel"><div><span class="eyebrow">TNVA IMAGE ENGINE</span><h2>Đưa ảnh lên E‑ink</h2><p>Mặc định tự tăng tương phản và làm rõ chủ thể. Khi gửi xong, màn hình giữ nguyên ảnh và không tự refresh.</p></div><label class="btn primary file-label">Chọn ảnh<input id="photoInput" type="file" accept="image/*" hidden></label></section>
+      <div class="image-studio">
+        <section class="image-preview-panel panel"><div class="screen-frame"><canvas id="photoCanvas" width="212" height="104"></canvas></div><div class="image-toolbar"><button id="photoZoomOut" class="btn compact">−</button><span id="photoZoomLabel">100%</span><button id="photoZoomIn" class="btn compact">+</button><button id="photoRotateLeft" class="btn compact">↶ 90°</button><button id="photoRotateRight" class="btn compact">↷ 90°</button><button id="photoFlipH" class="btn compact">Lật ngang</button><button id="photoFlipV" class="btn compact">Lật dọc</button></div><small>Kéo trực tiếp trên ảnh để đổi vị trí.</small></section>
+        <aside class="image-controls panel">
+          <label>Chế độ<select id="photoFit"><option value="cover">Phủ kín màn hình</option><option value="contain">Vừa toàn bộ ảnh</option></select></label>
+          <label>Phối điểm<select id="photoDither"><option value="floyd">Floyd–Steinberg</option><option value="ordered">Ordered 4×4</option><option value="threshold">Đen/trắng thuần</option></select></label>
+          <label>Độ sáng <output id="photoBrightnessValue">0</output><input id="photoBrightness" type="range" min="-100" max="100" value="0"></label>
+          <label>Tương phản <output id="photoContrastValue">120</output><input id="photoContrast" type="range" min="40" max="220" value="120"></label>
+          <label>Ngưỡng <output id="photoThresholdValue">145</output><input id="photoThreshold" type="range" min="40" max="220" value="145"></label>
+          <label>Độ nét <output id="photoSharpnessValue">35</output><input id="photoSharpness" type="range" min="0" max="100" value="35"></label>
+          <div class="stack-actions"><button id="photoAuto" class="btn">Tự tối ưu</button><button id="photoReset" class="btn">Đặt lại</button><button id="photoUpload" class="btn primary">Hiện ảnh trên đồng hồ</button></div>
+        </aside>
       </div>
     </section>
 
-    <details class="log-panel">
-      <summary>Nhật ký <span id="logCount">0</span></summary>
-      <div class="log-head"><button id="clearLogBtn">Xóa</button></div>
-      <pre id="logWindow"></pre>
-    </details>
-  </main>
+    <section id="countdownView" class="view">
+      <section class="designer-intro panel"><div><span class="eyebrow">TNVA COUNTDOWN</span><h2>Ngày đếm ngược</h2><p>Lưu chữ và mốc thời gian trong Flash; bố cục trên web khớp với màn hình thật.</p></div><span class="beta-badge">LIVE</span></section>
+      <div class="countdown-layout">
+        <form id="countdownForm" class="panel countdown-form">
+          <label>Chế độ<select id="countdownMode"><option value="default">Mặc định</option><option value="custom">Tùy chỉnh</option></select></label>
+          <label>Tiêu đề<input id="countdownTitle" maxlength="32" value="Sinh Nhật" required></label>
+          <label class="countdown-custom">Dòng dưới<input id="countdownSubtitle" maxlength="32" value="NGÀY - {H} GIỜ {M} PHÚT"></label>
+          <label>Ngày và giờ đích<input id="countdownTarget" type="datetime-local" required></label>
+          <label class="countdown-custom">Kiểu<select id="countdownStyle"><option value="clean">Trắng</option><option value="frame">Thanh tiêu đề</option></select></label>
+          <label class="countdown-custom">Cỡ số<select id="countdownSize"><option value="0">Nhỏ</option><option value="1" selected>Vừa</option><option value="2">Lớn</option></select></label>
+          <label class="countdown-custom"><input id="countdownShowTarget" type="checkbox" checked> Hiện ngày đích</label>
+          <button id="countdownUpload" class="btn primary" type="submit">Gửi vào đồng hồ</button>
+          <small>Sau khi mất nguồn, nội dung vẫn được nhớ. Đồng hồ cần được đồng bộ giờ để số đếm chính xác.</small>
+        </form>
+        <section class="panel countdown-preview"><div class="screen-frame"><canvas id="countdownCanvas" width="212" height="104"></canvas></div><div id="countdownReadout" class="countdown-readout">-- ngày --:--</div></section>
+      </div>
+    </section>
+
+    <section id="deviceView" class="view hidden" aria-hidden="true">
+      <button id="toggleHourBtn"></button><input id="firmwareInput" type="file"><div id="firmwareProgress" class="progress hidden"><span></span></div>
+    </section>
+
+    <datalist id="googleFontFamilies"><option value="Roboto Condensed"><option value="Barlow Condensed"><option value="IBM Plex Sans Condensed"><option value="Inter"><option value="Noto Sans"><option value="Noto Sans Mono"><option value="Oswald"><option value="Montserrat"></datalist>
+</main>
 
   <div id="toast" class="toast hidden"></div>
   <div id="modalBackdrop" class="modal-backdrop hidden"><div id="modal" class="modal"></div></div>

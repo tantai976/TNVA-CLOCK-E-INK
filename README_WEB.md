@@ -1,56 +1,38 @@
-# TNVA CLOCK Studio
+# TNVA CLOCK Studio R19
 
-`weble/index.html` là trình thiết kế giao diện E-ink mặc định. Trang cài nhanh 6 mặt tích hợp và kho 123 mẫu được giữ tại `weble/faces.html`.
+Trình thiết kế responsive cho màn E-Ink 212×104 và 104×212. R19 dùng cùng firmware/giao thức R18.
 
-## Đưa lên GitHub Pages
+- Mở `index.html` qua HTTPS/GitHub Pages để dùng Web Bluetooth.
+- Chế độ ngoại tuyến dùng được cho thiết kế/xuất file.
+- Chỉ phần kết nối/gửi BLE yêu cầu trình duyệt Chromium và HTTPS.
 
-Chép **toàn bộ nội dung thư mục `weble/`** lên repository GitHub Pages. Không đổi cấu trúc các thư mục:
+# TNVA CLOCK Studio R18
 
-```text
-weble/
-├── index.html
-├── faces.html
-├── assets/
-├── previews/
-└── warehouse/
-```
+Deploy the **contents** of this `weble` directory to the GitHub Pages root.
 
-Web Bluetooth chỉ chạy trên HTTPS hoặc localhost. GitHub Pages đã có HTTPS.
+Main URL: `index.html`
 
-## Chức năng thiết kế
+Legacy URLs `faces.html` and `weble.html` redirect to the main app.
 
-- Thiết kế ngoại tuyến, không bắt buộc kết nối đồng hồ.
-- Kéo thả và thay đổi kích thước đối tượng trực tiếp trên canvas.
-- Thêm chữ, giờ, ngày, thứ, âm lịch, điện áp, pin, đồng hồ kim, ảnh, đường và khung.
-- Chỉnh font, cỡ chữ, canh lề, vị trí, kích thước và lớp.
-- Ảnh có threshold, contrast, đảo màu, ordered/Floyd dithering, fit/fill và dịch ảnh.
-- Undo/redo, nhân bản, Delete, Ctrl+Z, Ctrl+Y, Ctrl+D và phím mũi tên.
-- Lưu dự án trong IndexedDB của trình duyệt.
-- Xuất `.tnvaproject`, `.tnvaface`, mở lại để sửa.
-- Nhập file `.eink` của app cũ; ảnh, chữ và vùng động thông dụng được chuyển sang dự án TNVA. Lịch tháng và các shape đặc biệt được chuyển gần đúng vì firmware DA14585 hiện không có renderer tương ứng.
-- Biên dịch gói 1-bit tối đa 4 KB và gửi trực tiếp vào DA14585 bằng BLE.
-- Duyệt và cài trực tiếp 123 giao diện 212×104 trong tab **Thư viện → Kho 123**.
+## Browser support
 
-## Dữ liệu động trên DA14585
+Web Bluetooth requires a Chromium-based browser and HTTPS (GitHub Pages is HTTPS). On Android use Chrome/Brave/Edge with Bluetooth enabled. iPhone/iPad Safari does not provide standard Web Bluetooth support.
 
-Firmware khe động hỗ trợ tối đa 12 vùng động:
+## Layout
 
-- Giờ/phút
-- Ngày/tháng/năm
-- Thứ
-- Âm lịch
-- Điện áp
-- Biểu tượng pin
-- Đồng hồ kim
+- Desktop: horizontal tab bar, multi-column face library, two-column image/countdown tools.
+- Phone: fixed bottom tab bar, large touch targets, one/two-column responsive cards, scrollable designer tool rail.
+- Switching tabs does not recreate or disconnect the BLE object.
 
-Phần chữ và ảnh tĩnh được raster hóa thành nền 1-bit. Gói được lưu ở SPI Flash `0x3C000`, mặt đang chọn được lưu ở `0x3B000`.
+## Warehouse
 
-## Kho cộng đồng tùy chọn
+`warehouse/index.json` contains 140 layouts for the 212×104 panel only:
 
-Web có thể dùng Supabase để đăng giao diện công khai:
+- 123 landscape
+- 17 portrait
 
-1. Tạo project Supabase.
-2. Chạy `supabase-schema.sql` trong SQL Editor.
-3. Điền URL và anon key trong `assets/js/config.js`.
+Each package is CRC-checked TNF1 and below the firmware's 4 KB limit.
+## Fonts
 
-Không cấu hình Supabase thì editor, lưu cục bộ, kho 123 và gửi BLE vẫn hoạt động bình thường.
+The Design tab can load a Google Font family for static labels and browser preview. The page loads it from `fonts.googleapis.com` when online and falls back to local fonts when offline. Dynamic values on the DA14585 use the embedded 1-bit Roboto Condensed/DSEG renderer so the firmware stays inside its RAM/ROM limits.
+
